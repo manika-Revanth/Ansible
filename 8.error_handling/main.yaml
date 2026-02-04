@@ -1,0 +1,33 @@
+---
+- hosts: all
+  become: true
+  
+  tasks:
+    - name: Make sure the packages openssh and openssl are up to date
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: latest
+      loop:
+        - openssh
+        - openssl
+      ignore_errors: yes  
+    - name: Verify if Docker is installed
+      ansible.builtin.command: docker --version
+      register: output
+      ignore_errors: yes
+    
+    - name: Install Docker on ubuntu
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+      when: 
+        - output.failed
+        - ansible_os_family == "Debian"
+    - name: Install Docker on Amazon-linux
+      ansible.builtin.yum:
+        name: docker
+        state: present
+      when: 
+        - output.failed
+        - ansible_os_family == "RedHat"    
